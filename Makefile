@@ -12,6 +12,7 @@ NM = arm-none-eabi-nm
 
 
 .PHONY: all
+default: $(TARGET)
 all: $(TARGET) 
 
 .PHONY: clean
