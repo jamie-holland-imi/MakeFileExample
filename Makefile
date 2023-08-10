@@ -15,7 +15,7 @@ FLAGS = -Wall -Wextra -g -I
 
 # Stores list of all c files in a project and all their object files
 CFILES := $(wildcard *.c)
-OBJECTS := $(patsubst %.c,%.o,$(wildcard *.c))
+OBJECTS := $(patsubst %.c,%.o,$(CFILES))
 
 # Project Name
 NAME = stm32test1_makefile
