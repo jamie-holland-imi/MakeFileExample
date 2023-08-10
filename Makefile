@@ -28,13 +28,13 @@ RM := rm -rf
 #conditionals for setup
 ifneq ($(MAKECMDGOALS),clean)
 ifneq ($(strip $(S_DEPS)),)
-   -include $(S_DEPS)
+	-include $(S_DEPS)
 endif
 ifneq ($(strip $(S_UPPER_DEPS)),)
-   -include $(S_UPPER_DEPS)
+	-include $(S_UPPER_DEPS)
 endif
 ifneq ($(strip $(C_DEPS)),)
-   -include $(C_DEPS)
+	-include $(C_DEPS)
 endif
 endif
 
@@ -64,13 +64,49 @@ all: main-build
 # Main-build Target
 main-build: $(BUILD_ARTIFACT_NAME).elf secondary-outputs
 
-# Output requires all .o files to have been created
-$(TARGET): $(OBJECTS)
-   $(CC) -o $@ $^
+# Tool invocations
+$(BUILD_ARTIFACT_NAME).elf $(BUILD_ARTIFACT_NAME).map: $(OBJS) $(USER_OBJS) C:\Users\jamie.holland\3D\ Objects\STM32CubeIDE\workspace_1.13.0\$(BUILD_ARTIFACT_NAME)\STM32G071RBTX_FLASH.ld makefile objects.list $(OPTIONAL_TOOL_DEPS)
+	arm-none-eabi-gcc -o "$(BUILD_ARTIFACT_NAME).elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m0plus -T"C:\Users\jamie.holland\3D Objects\STM32CubeIDE\workspace_1.13.0\$(BUILD_ARTIFACT_NAME)\STM32G071RBTX_FLASH.ld" --specs=nosys.specs -Wl,-Map="$(BUILD_ARTIFACT_NAME).map" -Wl,--gc-sections -static --specs=nano.specs -mfloat-abi=soft -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
+	@echo 'Finished building target: $@'
+	@echo ' '
 
-%.o: %.c
-   $(CC) $(FLAGS) -c -o $@ $^
+default.size.stdout: $(EXECUTABLES) makefile objects.list $(OPTIONAL_TOOL_DEPS)
+	arm-none-eabi-size  $(EXECUTABLES)
+	@echo 'Finished building: $@'
+	@echo ' '
 
-.PHONY: clean
+$(BUILD_ARTIFACT_NAME).list: $(EXECUTABLES) makefile objects.list $(OPTIONAL_TOOL_DEPS)
+	arm-none-eabi-objdump -h -S $(EXECUTABLES) > "$(BUILD_ARTIFACT_NAME).list"
+	@echo 'Finished building: $@'
+	@echo ' '
+
+$(BUILD_ARTIFACT_NAME).hex: $(EXECUTABLES) makefile objects.list $(OPTIONAL_TOOL_DEPS)
+	arm-none-eabi-objcopy  -O ihex $(EXECUTABLES) "$(BUILD_ARTIFACT_NAME).hex"
+	@echo 'Finished building: $@'
+	@echo ' '
+
+$(BUILD_ARTIFACT_NAME).bin: $(EXECUTABLES) makefile objects.list $(OPTIONAL_TOOL_DEPS)
+	arm-none-eabi-objcopy  -O binary $(EXECUTABLES) "$(BUILD_ARTIFACT_NAME).bin"
+	@echo 'Finished building: $@'
+	@echo ' '
+
+# Other Targets
 clean:
-   rm -rf $(TARGET) $(OBJECTS) 
+	-$(RM) $(BUILD_ARTIFACT_NAME).bin $(BUILD_ARTIFACT_NAME).elf $(BUILD_ARTIFACT_NAME).hex $(BUILD_ARTIFACT_NAME).list $(BUILD_ARTIFACT_NAME).map default.size.stdout
+	-@echo ' '
+
+secondary-outputs: $(SIZE_OUTPUT) $(OBJDUMP_LIST) $(OBJCOPY_HEX) $(OBJCOPY_BIN)
+
+fail-specified-linker-script-missing:
+	@echo 'Error: Cannot find the specified linker script. Check the linker settings in the build configuration.'
+	@exit 2
+
+warn-no-linker-script-specified:
+	@echo 'Warning: No linker script specified. Check the linker settings in the build configuration.'
+
+.PHONY: all clean dependents main-build fail-specified-linker-script-missing warn-no-linker-script-specified
+
+-include ../makefile.targets
+clean:
+	rm -rf $(TARGET) $(OBJECTS) 
+
